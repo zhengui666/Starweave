@@ -1,0 +1,4 @@
+import type {Operation} from '@/lib/board';
+import {readBoard,mutate} from '@/lib/storage';
+export async function GET(req:Request){const user=req.headers.get('oai-authenticated-user-id');if(!user)return Response.json({error:'请先登录'},{status:401});try{return Response.json(await readBoard(user));}catch(e){console.error(e);return Response.json({error:'暂时无法读取看板，请稍后重试'},{status:503});}}
+export async function POST(req:Request){const user=req.headers.get('oai-authenticated-user-id');if(!user)return Response.json({error:'请先登录'},{status:401});const origin=req.headers.get('origin');if(origin&&origin!==new URL(req.url).origin)return Response.json({error:'来源无效'},{status:403});try{if(Number(req.headers.get('content-length')||0)>30000)throw Error('请求过大');const p=await req.json() as {revision:number;operation:Operation};return Response.json(await mutate(user,p.revision,p.operation,'user'));}catch(e){return Response.json({error:e instanceof Error?e.message:'保存失败'},{status:409});}}
